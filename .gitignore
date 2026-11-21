@@ -1,0 +1,12 @@
+.env
+.env.*
+node_modules/
+dist/
+*.tar.gz
+*.db
+*.db-*
+*.sqlite*
+*.ics
+/data/
+/backups/
+/documents/
