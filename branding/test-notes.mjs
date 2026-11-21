@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+const origin = 'http://127.0.0.1:3000';
+const password = randomBytes(18).toString('hex');
+async function request(method, path, { body, headers = {}, status = 200 } = {}) {
+  const response = await fetch(origin + '/api/v1' + path, { method, headers: { origin, ...headers, ...(body == null ? {} : {'content-type':'application/json'}) }, body: body == null ? undefined : JSON.stringify(body) });
+  if (response.status !== status) throw new Error(method+' '+path+' returned '+response.status+' '+(await response.text()).slice(0,250));
+  return response;
+}
+async function login(username) {
+  const response = await request('POST', '/auth/login', { body: { username, password } });
+  const data = await response.json();
+  assert.ok(data.csrfToken);
+  return { cookie: response.headers.getSetCookie().map(value => value.split(';')[0]).join('; '), 'x-csrf-token': data.csrfToken };
+}
+const bootstrap = await (await request('GET', '/version')).json();
+assert.equal(bootstrap.setup_required, true, 'Run this smoke test only on an empty, isolated instance.');
+const owner = 'notes-smoke-admin';
+await request('POST', '/auth/setup', { body: { username: owner, display_name: 'Smoke Admin', password }, status: 201 });
+const headers = await login(owner);
+await request('POST', '/auth/users', { headers, body: {username:'notes-smoke-member',display_name:'Smoke Member',password}, status:201 });
+const reader = await login('notes-smoke-member');
+const project = (await (await request('POST', '/notes/categories', {headers, body:{name:'Smoke Project',scope:'household',project:true},status:201})).json()).data;
+assert.equal(project.project,true);
+const categories = (await (await request('GET','/notes/categories',{headers:reader})).json()).data;
+assert.equal(categories.find(category=>category.id===project.id)?.project,true);
+const data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX9kAAAAASUVORK5CYII=';
+const media = [{name:'test.png',data}];
+const note = (await (await request('POST','/notes',{headers,body:{content:'- [ ] Plan\nhttps://github.com/ulsklyc/yuvomi\nhttps://127.0.0.1/',category_ids:[project.id],add_images:media},status:201})).json()).data;
+assert.ok(note.categories.find(category=>category.id===project.id));
+const imagesPath='/notes/'+note.id+'/images';
+const images=(await (await request('GET',imagesPath,{headers:reader})).json()).data;
+assert.equal(images.length,1);
+const imgPath=imagesPath+'/'+images[0].id;
+const picture=await request('GET',imgPath,{headers:reader});
+assert.equal(picture.headers.get('content-type'),'image/png');
+assert.deepEqual(Buffer.from(await picture.arrayBuffer()),Buffer.from(data.split(',')[1],'base64'));
+const previews=(await (await request('GET','/notes/'+note.id+'/link-previews',{headers:reader})).json()).data;
+assert.ok(previews.find(item=>item.url.includes('github.com'))?.title);
+assert.ok(previews.find(item=>item.url.includes('github.com'))?.thumbnail);
+assert.deepEqual(previews.find(item=>item.url.includes('127.0.0.1')),{url:'https://127.0.0.1/'});
+await request('PUT','/notes/'+note.id,{headers,body:{content:'This update must roll back',add_images:[{name:'wrong.png',data:'data:image/png;base64,QUJDRA=='}]},status:400});
+const notes=(await (await request('GET','/notes',{headers})).json()).data;
+assert.match(notes.find(other=>other.id===note.id).content,/Plan/);
+await request('PUT','/notes/'+note.id,{headers,body:{visibility:'private'}});
+await request('GET',imgPath,{headers:reader,status:404});
+await request('GET',imgPath,{status:401});
+await request('PUT','/notes/'+note.id,{headers,body:{remove_image_ids:[images[0].id]}});
+await request('GET',imgPath,{headers,status:404});
+await request('POST','/notes',{headers,body:{content:'',add_images:media},status:201});
+console.log('Verified projects, project note assignment, image upload and removal, private image access, thumbnail and safe preview fallback.');

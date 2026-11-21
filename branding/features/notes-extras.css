@@ -1,0 +1,49 @@
+.blanzis-projects {
+  border-block-end: 1px solid var(--color-border);
+  padding-block: 0.7rem;
+}
+
+.blanzis-projects__header,
+.blanzis-projects__list,
+.blanzis-projects__form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.8rem;
+}
+
+.blanzis-projects__header { justify-content: space-between; }
+.blanzis-projects__header h2 { font-size: 1rem; margin: 0; }
+.blanzis-projects__list { margin-block-start: 0.5rem; }
+.blanzis-projects__form { align-items: end; margin-block-start: 0.75rem; }
+.blanzis-projects__form[hidden] { display: none; }
+.blanzis-projects__form label { flex: 1 1 10rem; }
+.blanzis-projects__form p { flex: 1 1 100%; margin: 0; }
+.blanzis-projects__form p:empty { display: none; }
+
+.blanzis-note-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 0.55rem;
+}
+.blanzis-note-images:not(:empty), .blanzis-note-links:not(:empty) { margin-block-start: 0.8rem; }
+.blanzis-note-images img { width: 100%; height: 8rem; object-fit: cover; border-radius: 0.65rem; }
+.blanzis-note-images button { margin-block-start: 0.3rem; }
+
+.blanzis-note-links { display: grid; gap: 0.45rem; }
+.blanzis-note-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  color: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  padding: 0.55rem;
+  text-decoration: none;
+}
+.blanzis-note-link:has(img) { grid-template-columns: 4.75rem minmax(0, 1fr); }
+.blanzis-note-link img { grid-row: span 2; width: 4.75rem; height: 3.25rem; object-fit: cover; border-radius: 0.45rem; }
+.blanzis-note-link span, .blanzis-note-link small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blanzis-note-link span { font-weight: 600; }
+.blanzis-note-link small { opacity: 0.75; }
