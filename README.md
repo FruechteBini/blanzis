@@ -14,6 +14,8 @@ Die erste Version `v2.93.0-blanzis.1` verwendet Yuvomi `v2.93.0` und das Docker-
 
 `v2.93.0-blanzis.6` startet die Monatsansicht mit der laufenden und den drei folgenden Wochen. Beim Antippen rückt die Tagesliste nach oben. Aufgaben lassen sich im Termin neu anlegen oder verknüpfen. **Küche** öffnet Korbstas Kochwelt, **Mehr** lässt die Navigation bedienbar, und Bilder in Notizen öffnen sich in einer Vollbildansicht mit Zurück-Navigation.
 
+`v2.93.0-blanzis.7` bietet unter **API-Zugriff** beim Anlegen eines Tokens den Schalter **Vollzugriff**. Der Token übernimmt die Rechte des ausgewählten Kontos für API und MCP.
+
 ## Frontend bauen
 
 Unter Windows mit Node.js 24 und npm aus dem Projektverzeichnis ausführen. Das Skript lädt den festgelegten Upstream-Release und prüft seine SHA-256-Prüfsumme. Mit `-SourceArchive` kann ein vorhandenes Archiv desselben Releases verwendet werden.
@@ -29,7 +31,7 @@ Das Ergebnis liegt unter `branding/frontend.tar.gz` und enthält die gebaute Obe
 Die Betriebsdateien liegen unter `/volume1/docker/yuvomi`. Das Image wird auf der NAS gebaut. Die vorhandene Compose-Datei definiert Volumes, Umgebungsvariablen und das Cloudflare-Tunnelnetz.
 
 1. Übertrage `branding/Dockerfile`, `branding/apply-branding.mjs`, `branding/.dockerignore` und `branding/frontend.tar.gz` nach `/volume1/docker/yuvomi/branding/`.
-2. Baue dort das Image mit `/usr/local/bin/docker build --tag blanzis:2.93.0-6 .` mit den üblichen Docker-Rechten.
+2. Baue dort das Image mit `/usr/local/bin/docker build --tag blanzis:2.93.0-7 .` mit den üblichen Docker-Rechten.
 3. Setze im vorhandenen Compose-Projekt den gewünschten Image-Tag und aktualisiere den Dienst mit `/usr/local/bin/docker compose up -d --no-build --pull never --wait`.
 4. Prüfe den Containerstatus sowie `/health` und `/manifest.webmanifest` auf der öffentlichen Domain. Das Manifest soll `Blanzis` als `name` und `short_name` liefern.
 

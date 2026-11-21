@@ -132,6 +132,43 @@ patch('server/openapi/schemas.js', [
             blanzis_calendar_event_id: { type: 'integer', minimum: 1, description: 'Link this task to a writable calendar event.' },`],
 ]);
 
+patch('public/settings/pages/admin-api.js', [
+  [`              label: t('settings.apiTokenScopeLimit'),
+              description: t('settings.apiTokenScopeHint'),
+              descriptionId: 'api-token-scope-hint',
+              checked: true,
+              attrs: { id: 'api-token-scope-limit' },`, `              label: t('settings.blanzisApiTokenFullAccess'),
+              description: t('settings.blanzisApiTokenFullAccessHint'),
+              descriptionId: 'api-token-scope-hint',
+              attrs: { id: 'api-token-full-access', 'aria-controls': 'api-token-scope-grid' },`],
+  [`  const scopeLimit = container.querySelector('#api-token-scope-limit');
+  const scopeGrid = container.querySelector('#api-token-scope-grid');
+  if (scopeLimit && scopeGrid) {
+    scopeLimit.addEventListener('change', () => {
+      scopeGrid.hidden = !scopeLimit.checked;
+    });
+  }`, `  const fullAccess = container.querySelector('#api-token-full-access');
+  const scopeGrid = container.querySelector('#api-token-scope-grid');
+  const syncScopes = () => { scopeGrid.hidden = fullAccess.checked; };
+  fullAccess.addEventListener('change', syncScopes);`],
+  ['    // scopes: nur senden, wenn „auf Module beschränken" aktiv ist. Sonst voller Zugriff.', '    // An omitted scope list uses the existing unscoped API token mode.'],
+  ['    if (scopeLimit && scopeLimit.checked) {', '    if (!fullAccess.checked) {'],
+  ['      if (scopeGrid) scopeGrid.hidden = !scopeLimit.checked;', '      syncScopes();'],
+]);
+
+for (const [locale, label, hint, oldRequired, required] of [
+  ['de', 'Vollzugriff', 'Der Token übernimmt alle Berechtigungen der gewählten Person, auch für MCP.',
+    'Wähle mindestens ein Modul oder schalte die Beschränkung aus.', 'Wähle mindestens ein Modul oder aktiviere Vollzugriff.'],
+  ['en', 'Full access', 'The token inherits all permissions of the selected account, including for MCP.',
+    'Pick at least one module, or turn the limit off.', 'Choose at least one module or enable full access.'],
+]) {
+  const path = `public/locales/${locale}.json`;
+  patch(path, [[
+    '        "apiTokenScopeFull":',
+    `        "blanzisApiTokenFullAccess": ${JSON.stringify(label)},\n        "blanzisApiTokenFullAccessHint": ${JSON.stringify(hint)},\n        "apiTokenScopeFull":`,
+  ], [JSON.stringify(oldRequired), JSON.stringify(required)]]);
+}
+
 const detailCss = readFileSync(new URL('./features/calendar-task-ui.css', import.meta.url), 'utf8');
 for (const path of ['public/styles/calendar.css', 'public/styles/tasks.css']) {
   writeFileSync(path, `${readFileSync(path, 'utf8')}\n${detailCss}`);

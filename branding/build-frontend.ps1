@@ -3,7 +3,7 @@ param([string]$SourceArchive)
 $ErrorActionPreference = 'Stop'
 $release = '2.93.0'
 $sourceHash = '8e7f9de005346e96d6a55a309fb32632670e5489948a31384046958c93dcc987'
-$revision = '6a703e29f19b7d6e5a1a337724a5cf5833c63a55-blanzis-6'
+$revision = '6a703e29f19b7d6e5a1a337724a5cf5833c63a55-blanzis-7'
 $sourceUrl = "https://codeload.github.com/ulsklyc/yuvomi/tar.gz/refs/tags/v$release"
 $output = Join-Path $PSScriptRoot 'frontend.tar.gz'
 $tempRoot = (Resolve-Path -LiteralPath ([IO.Path]::GetTempPath())).Path.TrimEnd('\', '/')
