@@ -5,7 +5,7 @@ import { noteLinkMatches } from '/utils/blanzis-note-links.js';
 const german = () => (document.documentElement.lang || navigator.language).startsWith('de');
 export const words = (de, en) => german() ? de : en;
 const limit = 6;
-const previewKey = 'blanzis:notes:link-previews';
+const previewKey = 'blanzis:notes:previews';
 let previewsEnabled = true;
 try { previewsEnabled = localStorage.getItem(previewKey) !== 'false'; } catch {}
 
@@ -55,7 +55,7 @@ function renderLinkCards(body, cards, noteId, { overview = false, resolve = true
   const urls = prepareNoteLinks(body);
   if (!previewsEnabled || !urls.length) return;
 
-  const visible = urls.slice(0, overview ? 1 : limit);
+  const visible = urls.slice(0, limit);
   for (const url of visible) {
     const card = externalLink(url, 'blanzis-note-link');
     const title = document.createElement('span');
@@ -75,7 +75,7 @@ function renderLinkCards(body, cards, noteId, { overview = false, resolve = true
   }
   if (!noteId || !resolve) return;
 
-  const load = () => api.get(`/notes/${noteId}/link-previews${overview ? '?first=1' : ''}`).then(({ data }) => {
+  const load = () => api.get(`/notes/${noteId}/link-previews`).then(({ data }) => {
     if (!cards.isConnected) return;
     const metadata = new Map(data.map(item => [item.url, item]));
     for (const card of cards.children) {
@@ -105,6 +105,7 @@ export function disconnectNoteGridLinks(grid) {
 }
 
 export function renderNoteGridLinks(grid) {
+  grid.classList.toggle('blanzis-notes-grid--previews', previewsEnabled);
   const loads = new WeakMap();
   const queue = [];
   let pending = 0;
@@ -132,7 +133,7 @@ export function renderNoteGridLinks(grid) {
     const body = note.querySelector('.note-card__content');
     const cards = document.createElement('div');
     cards.className = 'blanzis-note-links';
-    body.after(cards);
+    (note.querySelector('.blanzis-note-image-previews') ?? body).after(cards);
     const load = renderLinkCards(body, cards, note.dataset.id, { overview: true });
     if (!load) continue;
     loads.set(cards, load);
@@ -144,6 +145,16 @@ export function renderNoteGridLinks(grid) {
 
 function imageHref(noteId, imageId) {
   return `/api/v1/notes/${Number(noteId)}/images/${Number(imageId)}`;
+}
+
+function noteImageLink(noteId, { id, filename }) {
+  const href = imageHref(noteId, id);
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${esc(filename)}" loading="lazy"></a>`;
+}
+
+export function noteOverviewImages(note) {
+  if (!previewsEnabled || !note.preview_images?.length) return '';
+  return `<div class="blanzis-note-image-previews">${note.preview_images.map(image => noteImageLink(note.id, image)).join('')}</div>`;
 }
 
 export function noteMediaMarkup() {
@@ -162,10 +173,7 @@ export function renderNoteMedia(container, note, content = note?.content) {
   if (!note?.id) return;
   api.get(`/notes/${note.id}/images`).then(({ data }) => {
     if (!images.isConnected) return;
-    images.innerHTML = data.map(({ id, filename }) => {
-      const href = imageHref(note.id, id);
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${esc(filename)}" loading="lazy"></a>`;
-    }).join('');
+    images.innerHTML = data.map(image => noteImageLink(note.id, image)).join('');
   }).catch(() => {});
 }
 

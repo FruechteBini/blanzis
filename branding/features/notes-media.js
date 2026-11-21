@@ -55,6 +55,21 @@ export function applyNoteImages(database, noteId, images, removals = []) {
   if (count > maxImages) throw new NoteImageError('A note can contain up to six images.');
 }
 
+export function withNoteImagePreviews(database, notes) {
+  if (!notes.length) return notes;
+  ensureNoteExtras(database);
+  const rows = database.prepare(`
+    SELECT note_id, id, filename FROM blanzis_note_images
+    WHERE note_id IN (SELECT value FROM json_each(?)) ORDER BY id
+  `).all(JSON.stringify(notes.map(note => note.id)));
+  const byNote = new Map();
+  for (const { note_id, id, filename } of rows) {
+    if (!byNote.has(note_id)) byNote.set(note_id, []);
+    byNote.get(note_id).push({ id, filename });
+  }
+  return notes.map(note => ({ ...note, preview_images: byNote.get(note.id) ?? [] }));
+}
+
 const previewCache = new Map();
 let activePreviews = 0;
 const maxThumbnailBytes = 512 * 1024;

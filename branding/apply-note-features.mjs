@@ -28,6 +28,13 @@ patch('server/services/subscription-logo.js', [
 ]);
 
 patch('server/openapi/schemas.js', [
+  ["            categories: { type: 'array', items: { $ref: '#/components/schemas/NoteCategory' } },\n          },\n        },\n        NoteCreateInput: {", `            categories: { type: 'array', items: { $ref: '#/components/schemas/NoteCategory' } },
+            preview_images: { type: 'array', items: { type: 'object', required: ['id', 'filename'], properties: {
+              id: { type: 'integer' }, filename: { type: 'string' },
+            } } },
+          },
+        },
+        NoteCreateInput: {`],
   ['const noteInputProperties = {', `const noteInputProperties = {
   add_images: { type: 'array', maxItems: 6, items: {
     type: 'object', required: ['name', 'data'], properties: {
@@ -76,7 +83,11 @@ router.get('/:id/link-previews', async (req, res) => {
 
 patch('server/routes/notes.js', [
   ["import express from 'express';", `import express from 'express';
-import { applyNoteImages, ensureNoteExtras, NoteImageError, noteLinkPreviews, readNoteImages } from '../services/blanzis-notes-media.js';`],
+import { applyNoteImages, ensureNoteExtras, NoteImageError, noteLinkPreviews, readNoteImages, withNoteImagePreviews } from '../services/blanzis-notes-media.js';`],
+  ['  return hydrateNotesWithCategories(db.get(), [note], actorId(req))[0];', `  const database = db.get();
+  return withNoteImagePreviews(database, hydrateNotesWithCategories(database, [note], actorId(req)))[0];`],
+  ['  res.json({ data: hydrateNotesWithCategories(db.get(), notes, actorId(req)) });', `  const database = db.get();
+  res.json({ data: withNoteImagePreviews(database, hydrateNotesWithCategories(database, notes, actorId(req))) });`],
   ['function categoryPayload(category) {\n  return {', `function categoryPayload(category) {
   const database = db.get();
   ensureNoteExtras(database);
@@ -119,13 +130,17 @@ writeFileSync(notesRoute, notesSource.replaceAll(categoryConflict,
 
 patch('public/pages/notes.js', [
   ["import { esc, renderMarkdownLight } from '/utils/html.js';", `import { esc, renderMarkdownLight } from '/utils/html.js';
-import { noteMediaMarkup, renderNoteMedia, noteImageEditorMarkup, wireNoteImageEditor, renderNoteProjects, words, wireNotePreviewToggle, renderNoteGridLinks, disconnectNoteGridLinks } from '/utils/blanzis-notes-extras.js';`],
+import { noteMediaMarkup, renderNoteMedia, noteImageEditorMarkup, wireNoteImageEditor, renderNoteProjects, words, wireNotePreviewToggle, renderNoteGridLinks, disconnectNoteGridLinks, noteOverviewImages } from '/utils/blanzis-notes-extras.js';`],
   ['  filterCategoryIds: [],', '  filterCategoryIds: [],\n  activeProjectId: null,'],
-  ['        <div class="notes-filters page-chip-row"', '        <section class="blanzis-projects" id="blanzis-projects"></section>\n        <div class="notes-filters page-chip-row"'],
-  ['        <div id="notes-grid"', `        <div class="blanzis-notes-view">
-          <button type="button" id="blanzis-note-preview-toggle" class="btn btn--secondary btn--sm">\${words('Linkvorschau', 'Link previews')}</button>
+  ['        <div class="notes-filters page-chip-row"', '        <section class="blanzis-projects" id="blanzis-projects"></section>\n        <div class="blanzis-notes-view">\n        <div class="notes-filters page-chip-row"'],
+  ['        <div id="notes-grid"', `          <button type="button" id="blanzis-note-preview-toggle" class="blanzis-notes-view__toggle" aria-label="\${words('Notizvorschau', 'Note previews')}" title="\${words('Notizvorschau', 'Note previews')}">
+            <span class="blanzis-notes-view__on" aria-hidden="true"><i data-lucide="eye"></i></span>
+            <span class="blanzis-notes-view__off" aria-hidden="true"><i data-lucide="eye-off"></i></span>
+          </button>
         </div>
         <div id="notes-grid"`],
+  ['      <div class="note-card__content">${renderMarkdownLight(note.content, CHECKLIST_OPTS(note))}</div>', `      <div class="note-card__content">\${renderMarkdownLight(note.content, CHECKLIST_OPTS(note))}</div>
+      \${noteOverviewImages(note)}`],
   ["  try {\n    const [notesRes, categoriesRes] = await Promise.all([api.get('/notes'), api.get('/notes/categories')]);", `  const previewGrid = container.querySelector('#notes-grid');
   wireNotePreviewToggle(container.querySelector('#blanzis-note-preview-toggle'), () => {
     if (!previewGrid.hasAttribute('aria-busy')) drawGrid(previewGrid);
