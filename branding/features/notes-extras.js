@@ -1,6 +1,7 @@
 import { api } from '/api.js';
 import { esc } from '/utils/html.js';
 import { noteLinkMatches } from '/utils/blanzis-note-links.js';
+import { attachOverlay } from '/utils/overlay-history.js';
 
 const german = () => (document.documentElement.lang || navigator.language).startsWith('de');
 export const words = (de, en) => german() ? de : en;
@@ -106,6 +107,7 @@ export function disconnectNoteGridLinks(grid) {
 
 export function renderNoteGridLinks(grid) {
   grid.classList.toggle('blanzis-notes-grid--previews', previewsEnabled);
+  wireNoteImageViewer(grid);
   const loads = new WeakMap();
   const queue = [];
   let pending = 0;
@@ -149,7 +151,38 @@ function imageHref(noteId, imageId) {
 
 function noteImageLink(noteId, { id, filename }) {
   const href = imageHref(noteId, id);
-  return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${esc(filename)}" loading="lazy"></a>`;
+  return `<a href="${href}" data-note-image target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${esc(filename)}" loading="lazy"></a>`;
+}
+
+function wireNoteImageViewer(container) {
+  for (const link of container.querySelectorAll('a[data-note-image]')) {
+    link.addEventListener('click', event => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      const dialog = document.createElement('dialog');
+      dialog.className = 'blanzis-note-image-viewer';
+      dialog.setAttribute('aria-label', words('Bildvorschau', 'Image preview'));
+      const picture = document.createElement('img');
+      picture.src = link.href;
+      picture.alt = link.querySelector('img').alt;
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'btn btn--icon';
+      closeButton.setAttribute('aria-label', words('Bild schließen', 'Close image'));
+      closeButton.textContent = '×';
+      const close = () => {
+        dialog.close();
+        dialog.remove();
+        if (link.isConnected) link.focus({ preventScroll: true });
+      };
+      closeButton.addEventListener('click', close);
+      dialog.addEventListener('cancel', cancel => { cancel.preventDefault(); close(); });
+      dialog.append(picture, closeButton);
+      document.body.append(dialog);
+      dialog.showModal();
+      attachOverlay(dialog, close);
+    });
+  }
 }
 
 export function noteOverviewImages(note) {
@@ -174,6 +207,7 @@ export function renderNoteMedia(container, note, content = note?.content) {
   api.get(`/notes/${note.id}/images`).then(({ data }) => {
     if (!images.isConnected) return;
     images.innerHTML = data.map(image => noteImageLink(note.id, image)).join('');
+    wireNoteImageViewer(images);
   }).catch(() => {});
 }
 
@@ -233,7 +267,8 @@ export function wireNoteImageEditor(panel, note) {
       ...added.map((item, index) => ({ filename: item.name, href: item.data, index }))];
     for (const item of items) {
       const tile = document.createElement('div');
-      tile.innerHTML = `<img src="${esc(item.href)}" alt="${esc(item.filename)}"><button class="btn btn--secondary btn--sm" type="button">${words('Entfernen', 'Remove')}</button>`;
+      tile.innerHTML = `<a href="${esc(item.href)}" data-note-image><img src="${esc(item.href)}" alt="${esc(item.filename)}"></a><button class="btn btn--secondary btn--sm" type="button">${words('Entfernen', 'Remove')}</button>`;
+      wireNoteImageViewer(tile);
       const button = tile.querySelector('button');
       button.setAttribute('aria-label', `${words('Entfernen', 'Remove')} ${item.filename}`);
       button.addEventListener('click', () => {
