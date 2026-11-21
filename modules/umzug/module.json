@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "id": "umzug",
+  "name": "Umzug",
+  "version": "1.0.0",
+  "description": "Gemeinsame Aufgaben, Links und Ideen für jeden Raum im neuen Haus.",
+  "entry": "index.js",
+  "style": "style.css",
+  "icon": "house",
+  "accent": "#347E77",
+  "menu": { "show": true, "label": "Umzug", "icon": "house", "order": 10 },
+  "page": { "composition": "full", "width": "wide", "navigation": "standard", "responsive": "standard" },
+  "capabilities": { "permissions": { "module": { "label": "Umzug", "icon": "house" } } }
+}

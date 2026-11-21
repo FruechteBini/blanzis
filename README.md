@@ -36,3 +36,7 @@ Die Betriebsdateien liegen unter `/volume1/docker/yuvomi`. Das Image wird auf de
 4. Prüfe den Containerstatus sowie `/health` und `/manifest.webmanifest` auf der öffentlichen Domain. Das Manifest soll `Blanzis` als `name` und `short_name` liefern.
 
 Bei einem neuen Upstream-Release werden Archivversion, Prüfsumme, Basisimage-Digest, Build-Revision und Image-Tag gemeinsam aktualisiert. Beim Wechsel auf einen neuen Upstream-Release vorab ein Yuvomi-Backup erstellen und die Release-Hinweise auf Datenbankmigrationen prüfen.
+
+## Umzugsmodul
+
+Das Modul unter `modules/umzug` erscheint in Blanzis unter `/m/umzug`. Es nutzt gemeinsame Notizkategorien als Räume, speichert Links und Ideen als Notizen und ordnet Aufgaben mit dem Tag `umzugraum-<Kategorie-ID>` zu. Die Inhalte liegen in den bestehenden Blanzis-Backups. Für die Ersteinrichtung die Raumkategorien mit `modules/seed-umzug.mjs` im laufenden Container anlegen. Das Skript nimmt seinen Quelltext über die Standardeingabe von `node --import ./server/utils/load-secrets-readonly.js --input-type=module` entgegen. Anschließend den Ordner `umzug` als `/app/modules/umzug` im persistenten Modulvolume bereitstellen. Bei einer Installation über die Oberfläche das Modul unter **Aktive Module** einschalten.

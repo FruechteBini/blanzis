@@ -1,0 +1,93 @@
+.move-page {
+  --move-edge: var(--page-inline-pad, 1rem);
+  padding: 0 var(--move-edge) 2rem;
+  min-width: 0;
+}
+
+.move-rooms {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding-block: .45rem .7rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.move-room-tabs {
+  display: flex;
+  flex: 1;
+  gap: .45rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: .15rem;
+}
+
+.move-room-tabs button,
+.move-rooms > button { flex: none; white-space: nowrap; }
+
+.move-add-room {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .6rem;
+  margin-block: .75rem;
+}
+
+.move-add-room[hidden], .move-status:empty { display: none; }
+.move-add-room label { flex: 1 1 12rem; }
+.move-status { margin: .55rem 0 0; font-size: .85rem; color: var(--color-text-secondary); }
+
+.move-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  align-items: start;
+  gap: .85rem;
+  padding-block-start: .85rem;
+}
+
+.move-panel {
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.move-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .55rem;
+  padding: .8rem .85rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.move-panel__head h2 { font-size: 1rem; margin: 0; }
+.move-panel__count { color: var(--color-text-secondary); font-size: .8rem; }
+.move-items { list-style: none; padding: 0; margin: 0; }
+.move-item, .move-empty { padding: .68rem .85rem; }
+.move-empty { color: var(--color-text-secondary); font-size: .875rem; }
+.move-item + .move-item { border-top: 1px solid var(--color-border-subtle); }
+.move-item--task, .move-item--link { display: flex; align-items: center; gap: .65rem; }
+.move-item--task input { flex: none; inline-size: 1.15rem; block-size: 1.15rem; accent-color: var(--color-accent); }
+.move-item a { color: inherit; overflow-wrap: anywhere; }
+.move-item--task.is-done a { text-decoration: line-through; }
+.move-item small { display: block; font-size: .78rem; color: var(--color-text-secondary); }
+.move-item__edit { flex: none; font-size: .78rem; }
+.move-link { flex: 1; display: flex; align-items: center; gap: .65rem; min-width: 0; text-decoration: none; }
+.move-link img { inline-size: 3.5rem; block-size: 2.75rem; object-fit: cover; border-radius: var(--radius-xs); }
+.move-idea { display: grid; gap: .25rem; text-decoration: none; }
+.move-idea > span { white-space: pre-wrap; }
+.move-idea > span:not(.move-idea__images) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
+.move-idea__images { display: flex; flex-wrap: wrap; gap: .35rem; }
+.move-idea__images img { width: 4rem; height: 3rem; object-fit: cover; border-radius: var(--radius-xs); }
+.move-compose { border-top: 1px solid var(--color-border-subtle); padding: .55rem .85rem; }
+.move-compose summary { cursor: pointer; color: var(--color-accent); padding-block: .3rem; }
+.move-compose form { display: grid; gap: .55rem; margin-block: .4rem; }
+.move-compose label, .move-add-room label { display: grid; gap: .25rem; font-size: .8rem; }
+.move-compose button { justify-self: start; }
