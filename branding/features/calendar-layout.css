@@ -1,0 +1,39 @@
+@media (max-width: 639px) {
+  .month-view--split.month-view--titles {
+    --blanzis-month-budget: clamp(320px, 100dvh - 340px, 504px);
+  }
+
+  .month-view--split.month-view--titles .month-day {
+    --month-row-h: min(84px, var(--blanzis-month-budget, 320px) / var(--month-weeks, 5));
+  }
+
+  .month-view--split.month-view--titles .month-day__number {
+    margin-inline: auto;
+  }
+
+  .month-view--split.month-view--titles .month-grid {
+    --month-band-h: calc(var(--text-2xs) * 1.3 + 2 * var(--space-px));
+  }
+
+  .month-view--split.month-view--titles .month-bands {
+    padding-top: calc(var(--space-1) + var(--space-5) + var(--space-0h));
+    row-gap: var(--space-px);
+  }
+
+  .month-view--split.month-view--titles .month-bands > .cal-band {
+    margin-inline: var(--space-0h);
+    gap: var(--space-0h);
+    font-size: var(--text-2xs);
+    line-height: 1.3;
+    padding: var(--space-px) var(--space-0h);
+    pointer-events: none;
+  }
+
+  .month-view--split.month-view--titles .month-day__lanes {
+    height: calc(min(var(--lanes), var(--lanes-shown, 99)) * (var(--month-band-h) + var(--space-px)));
+  }
+
+  .month-view--split.month-view--titles.month-view--collapsed .month-day--selweek {
+    --month-row-h: 84px;
+  }
+}
