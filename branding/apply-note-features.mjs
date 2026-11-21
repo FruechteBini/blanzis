@@ -65,7 +65,7 @@ router.get('/:id/images/:imageId', (req, res) => {
 router.get('/:id/link-previews', async (req, res) => {
   const note = findVisibleNote(req, Number(req.params.id));
   if (!note) return res.status(404).json(NOTE_NOT_FOUND);
-  const data = await noteLinkPreviews(note.content);
+  const data = await noteLinkPreviews(note.content, req.query.first === '1');
   const current = findVisibleNote(req, note.id);
   if (!current) return res.status(404).json(NOTE_NOT_FOUND);
   res.set('Cache-Control', 'private, no-store');
@@ -119,9 +119,23 @@ writeFileSync(notesRoute, notesSource.replaceAll(categoryConflict,
 
 patch('public/pages/notes.js', [
   ["import { esc, renderMarkdownLight } from '/utils/html.js';", `import { esc, renderMarkdownLight } from '/utils/html.js';
-import { noteMediaMarkup, renderNoteMedia, noteImageEditorMarkup, wireNoteImageEditor, renderNoteProjects } from '/utils/blanzis-notes-extras.js';`],
+import { noteMediaMarkup, renderNoteMedia, noteImageEditorMarkup, wireNoteImageEditor, renderNoteProjects, words, wireNotePreviewToggle, renderNoteGridLinks, disconnectNoteGridLinks } from '/utils/blanzis-notes-extras.js';`],
   ['  filterCategoryIds: [],', '  filterCategoryIds: [],\n  activeProjectId: null,'],
   ['        <div class="notes-filters page-chip-row"', '        <section class="blanzis-projects" id="blanzis-projects"></section>\n        <div class="notes-filters page-chip-row"'],
+  ['        <div id="notes-grid"', `        <div class="blanzis-notes-view">
+          <button type="button" id="blanzis-note-preview-toggle" class="btn btn--secondary btn--sm">\${words('Linkvorschau', 'Link previews')}</button>
+        </div>
+        <div id="notes-grid"`],
+  ["  try {\n    const [notesRes, categoriesRes] = await Promise.all([api.get('/notes'), api.get('/notes/categories')]);", `  const previewGrid = container.querySelector('#notes-grid');
+  wireNotePreviewToggle(container.querySelector('#blanzis-note-preview-toggle'), () => {
+    if (!previewGrid.hasAttribute('aria-busy')) drawGrid(previewGrid);
+  });
+  signal?.addEventListener('abort', () => disconnectNoteGridLinks(previewGrid), { once: true });
+
+  try {
+    const [notesRes, categoriesRes] = await Promise.all([api.get('/notes'), api.get('/notes/categories')]);`],
+  ['function drawGrid(grid) {', 'function drawGrid(grid) {\n  disconnectNoteGridLinks(grid);'],
+  ["  grid.insertAdjacentHTML('beforeend', html);", "  grid.insertAdjacentHTML('beforeend', html);\n  renderNoteGridLinks(grid);"],
   ["  const addHandler = () => { if (!readOnly()) openNoteModal({ mode: 'create' }); };", "  const addHandler = () => { if (!readOnly()) openNoteModal({ mode: 'create', projectCategoryId: state.activeProjectId }); };"],
   ['function renderNotesAndFilters({ motion = false } = {}) {', `function renderProjects() {
   const root = _container?.querySelector('#blanzis-projects');

@@ -86,8 +86,10 @@ async function fetchPreview(url) {
     if (!metadata.has(field)) metadata.set(field, attribute(tag, 'content'));
   }
   const label = metadata.get('og:title') || metadata.get('twitter:title') || decodeHtmlEntities(html.match(/<title\b[^>]*>([^<]*)<\/title>/i)?.[1] || '');
+  const description = metadata.get('og:description') || metadata.get('twitter:description') || metadata.get('description');
   const picture = metadata.get('og:image:secure_url') || metadata.get('og:image') || metadata.get('twitter:image');
   const result = { title: label.trim().slice(0, 160) };
+  if (description) result.description = description.replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!picture) return result;
   try {
     const { response: image } = await fetchPublic(new URL(picture, finalUrl).href, options);
@@ -116,8 +118,9 @@ function cachedPreview(url) {
   return promise;
 }
 
-export async function noteLinkPreviews(content) {
+export async function noteLinkPreviews(content, firstOnly = false) {
   const result = [];
-  for (const url of noteLinks(content)) result.push({ url, ...await cachedPreview(url) });
+  const urls = noteLinks(content);
+  for (const url of firstOnly ? urls.slice(0, 1) : urls) result.push({ url, ...await cachedPreview(url) });
   return result;
 }

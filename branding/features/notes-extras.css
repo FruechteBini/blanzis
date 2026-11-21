@@ -30,10 +30,21 @@
 .blanzis-note-images img { width: 100%; height: 8rem; object-fit: cover; border-radius: 0.65rem; }
 .blanzis-note-images button { margin-block-start: 0.3rem; }
 
+.blanzis-notes-view { display: flex; justify-content: flex-end; margin-block: 0.45rem 0.8rem; }
+.blanzis-notes-view button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.blanzis-note-links:empty,
+.note-card__content:empty { display: none; }
 .blanzis-note-links { display: grid; gap: 0.45rem; }
 .blanzis-note-link {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'title' 'description' 'domain';
   align-items: center;
   gap: 0.15rem 0.75rem;
   color: inherit;
@@ -42,8 +53,32 @@
   padding: 0.55rem;
   text-decoration: none;
 }
-.blanzis-note-link:has(img) { grid-template-columns: 4.75rem minmax(0, 1fr); }
-.blanzis-note-link img { grid-row: span 2; width: 4.75rem; height: 3.25rem; object-fit: cover; border-radius: 0.45rem; }
-.blanzis-note-link span, .blanzis-note-link small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.blanzis-note-link span { font-weight: 600; }
-.blanzis-note-link small { opacity: 0.75; }
+.blanzis-note-link:hover { border-color: var(--color-accent); }
+.blanzis-note-link:has(img) {
+  grid-template-columns: minmax(0, 1fr) min(30%, 6rem);
+  grid-template-areas: 'title thumbnail' 'description thumbnail' 'domain thumbnail';
+}
+.blanzis-note-link img {
+  grid-area: thumbnail;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.45rem;
+}
+.blanzis-note-link__title { grid-area: title; font-weight: 600; }
+.blanzis-note-link__description { grid-area: description; font-size: var(--text-xs); }
+.blanzis-note-link__title, .blanzis-note-link__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.blanzis-note-link__description:empty { display: none; }
+.blanzis-note-link small {
+  grid-area: domain;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

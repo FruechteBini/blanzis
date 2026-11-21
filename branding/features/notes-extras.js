@@ -1,10 +1,146 @@
 import { api } from '/api.js';
 import { esc } from '/utils/html.js';
-import { noteLinks } from '/utils/blanzis-note-links.js';
+import { noteLinkMatches } from '/utils/blanzis-note-links.js';
 
 const german = () => (document.documentElement.lang || navigator.language).startsWith('de');
 export const words = (de, en) => german() ? de : en;
 const limit = 6;
+const previewKey = 'blanzis:notes:link-previews';
+let previewsEnabled = true;
+try { previewsEnabled = localStorage.getItem(previewKey) !== 'false'; } catch {}
+
+export function wireNotePreviewToggle(button, redraw) {
+  button.setAttribute('aria-pressed', String(previewsEnabled));
+  button.addEventListener('click', () => {
+    previewsEnabled = !previewsEnabled;
+    try { localStorage.setItem(previewKey, String(previewsEnabled)); } catch {}
+    button.setAttribute('aria-pressed', String(previewsEnabled));
+    redraw();
+  });
+}
+
+function externalLink(url, className) {
+  const link = document.createElement('a');
+  link.className = className;
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer nofollow';
+  return link;
+}
+
+function prepareNoteLinks(body) {
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    acceptNode: node => node.parentElement.closest('a, code, pre, button')
+      ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const text = node.textContent;
+    let offset = 0;
+    const parts = [];
+    for (const match of noteLinkMatches(text)) {
+      const link = externalLink(match.url, 'note-md-link blanzis-raw-link');
+      link.textContent = match.text;
+      parts.push(text.slice(offset, match.index), link);
+      offset = match.index + match.text.length;
+    }
+    if (parts.length) node.replaceWith(...parts, text.slice(offset));
+  }
+  return [...new Set([...body.querySelectorAll('a[href]')]
+    .map(link => link.href).filter(url => /^https?:\/\//.test(url)))];
+}
+
+function renderLinkCards(body, cards, noteId, { overview = false, resolve = true } = {}) {
+  const urls = prepareNoteLinks(body);
+  if (!previewsEnabled || !urls.length) return;
+
+  const visible = urls.slice(0, overview ? 1 : limit);
+  for (const url of visible) {
+    const card = externalLink(url, 'blanzis-note-link');
+    const title = document.createElement('span');
+    title.className = 'blanzis-note-link__title';
+    title.textContent = new URL(url).hostname;
+    const description = document.createElement('span');
+    description.className = 'blanzis-note-link__description';
+    const domain = document.createElement('small');
+    domain.textContent = new URL(url).hostname;
+    card.append(title, description, domain);
+    cards.append(card);
+  }
+  for (const paragraph of body.querySelectorAll('.note-md-p')) {
+    const [link] = paragraph.children;
+    if (paragraph.children.length === 1 && link.matches('.blanzis-raw-link') && visible.includes(link.href)
+        && paragraph.textContent.trim() === link.textContent.trim()) paragraph.remove();
+  }
+  if (!noteId || !resolve) return;
+
+  const load = () => api.get(`/notes/${noteId}/link-previews${overview ? '?first=1' : ''}`).then(({ data }) => {
+    if (!cards.isConnected) return;
+    const metadata = new Map(data.map(item => [item.url, item]));
+    for (const card of cards.children) {
+      const preview = metadata.get(card.href);
+      if (preview?.title) card.querySelector('.blanzis-note-link__title').textContent = preview.title;
+      if (preview?.description) card.querySelector('.blanzis-note-link__description').textContent = preview.description;
+      if (/^data:image\/(?:jpeg|png|webp);base64,/.test(preview?.thumbnail || '')) {
+        const thumbnail = document.createElement('img');
+        thumbnail.src = preview.thumbnail;
+        thumbnail.alt = '';
+        card.append(thumbnail);
+      }
+    }
+  }).catch(() => {});
+  if (!overview) {
+    load();
+    return;
+  }
+  return load;
+}
+
+const gridObservers = new WeakMap();
+
+export function disconnectNoteGridLinks(grid) {
+  gridObservers.get(grid)?.disconnect();
+  gridObservers.delete(grid);
+}
+
+export function renderNoteGridLinks(grid) {
+  const loads = new WeakMap();
+  const queue = [];
+  let pending = 0;
+  function loadVisibleCards() {
+    while (pending < 3 && queue.length) {
+      const target = queue.shift();
+      if (!target.isConnected) continue;
+      pending++;
+      loads.get(target)().finally(() => {
+        pending--;
+        loadVisibleCards();
+      });
+    }
+  }
+  const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    for (const { target, isIntersecting } of entries) {
+      if (!isIntersecting) continue;
+      observer.unobserve(target);
+      queue.push(target);
+    }
+    loadVisibleCards();
+  }) : null;
+  if (observer) gridObservers.set(grid, observer);
+  for (const note of grid.querySelectorAll('.note-card')) {
+    const body = note.querySelector('.note-card__content');
+    const cards = document.createElement('div');
+    cards.className = 'blanzis-note-links';
+    body.after(cards);
+    const load = renderLinkCards(body, cards, note.dataset.id, { overview: true });
+    if (!load) continue;
+    loads.set(cards, load);
+    if (observer) observer.observe(cards);
+    else queue.push(cards);
+  }
+  if (!observer) loadVisibleCards();
+}
 
 function imageHref(noteId, imageId) {
   return `/api/v1/notes/${Number(noteId)}/images/${Number(imageId)}`;
@@ -17,25 +153,12 @@ export function noteMediaMarkup() {
 export function renderNoteMedia(container, note, content = note?.content) {
   const root = container.querySelector('[data-blanzis-note-media]');
   if (!root) return;
-  const links = noteLinks(content);
   const images = document.createElement('div');
   images.className = 'blanzis-note-images';
   const cards = document.createElement('div');
   cards.className = 'blanzis-note-links';
-  for (const url of links) {
-    const card = document.createElement('a');
-    card.className = 'blanzis-note-link';
-    card.href = url;
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
-    const title = document.createElement('span');
-    title.textContent = new URL(url).hostname;
-    const label = document.createElement('small');
-    label.textContent = url;
-    card.append(title, label);
-    cards.append(card);
-  }
   root.replaceChildren(images, cards);
+  renderLinkCards(container.querySelector('.note-read__body'), cards, note?.id, { resolve: note?.content === content });
   if (!note?.id) return;
   api.get(`/notes/${note.id}/images`).then(({ data }) => {
     if (!images.isConnected) return;
@@ -43,22 +166,6 @@ export function renderNoteMedia(container, note, content = note?.content) {
       const href = imageHref(note.id, id);
       return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${esc(filename)}" loading="lazy"></a>`;
     }).join('');
-  }).catch(() => {});
-  if (!links.length || note.content !== content) return;
-  api.get(`/notes/${note.id}/link-previews`).then(({ data }) => {
-    if (!cards.isConnected) return;
-    const metadata = new Map(data.map(item => [item.url, item]));
-    for (const card of cards.children) {
-      const preview = metadata.get(card.href);
-      if (preview?.title) card.querySelector('span').textContent = preview.title;
-      if (/^data:image\/(?:jpeg|png|webp);base64,/.test(preview?.thumbnail || '')) {
-        const thumbnail = document.createElement('img');
-        thumbnail.src = preview.thumbnail;
-        thumbnail.alt = '';
-        thumbnail.loading = 'lazy';
-        card.prepend(thumbnail);
-      }
-    }
   }).catch(() => {});
 }
 

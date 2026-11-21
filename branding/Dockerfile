@@ -5,4 +5,4 @@ RUN rm -rf /app/dist
 ADD frontend.tar.gz ./
 COPY apply-branding.mjs /usr/local/share/apply-branding.mjs
 RUN node /usr/local/share/apply-branding.mjs server
-ENV APP_BUILD_REVISION=6a703e29f19b7d6e5a1a337724a5cf5833c63a55-blanzis-3
+ENV APP_BUILD_REVISION=6a703e29f19b7d6e5a1a337724a5cf5833c63a55-blanzis-4
